@@ -7,6 +7,7 @@ import DeleteStorageIcon from '../icons/DeleteStorage';
 import FavIconOff from '@material-ui/icons/StarBorder';
 import FavIconOn from '@material-ui/icons/Star';
 import {iconsColor, lightIconsColor} from '../../constants/colors';
+import { addUrlToSearchResults,getExistingSearchResults,deleteSearchResults } from '../../settings/searchResultSettings';
 
 import commonStyles from '../common.styles.css';
 import styles from './style.css';
@@ -154,6 +155,7 @@ class AddressBar extends React.Component<Props> {
     if (e.key === 'Enter') {
       this.inputRef.current.blur();
       this._onChange();
+      this._addUrlToExistingSearchResult();
     }
   };
 
@@ -175,6 +177,32 @@ class AddressBar extends React.Component<Props> {
     }
     return address;
   };
+
+  _addUrlToExistingSearchResult = () => {
+    let existingSearchResults = getExistingSearchResults();
+    let formattedUrl = this.state.userTypedAddress.replace(/^(?:https?:\/\/)?(?:www\.)?/i, "").split('/')[0];
+
+    if(existingSearchResults?.length){
+     let updatedSearchResults = [...existingSearchResults];
+
+     const index = updatedSearchResults.findIndex(eachSearchResult => eachSearchResult.url === formattedUrl);
+
+     index!== (undefined|| -1 || null) ? updatedSearchResults[index].visitedCount = updatedSearchResults[index].visitedCount+1 :
+            updatedSearchResults.push({url: formattedUrl,visitedCount:1})
+
+     addUrlToSearchResults(updatedSearchResults);
+
+    }
+
+    else {
+      let addNewUrl = [];
+        addNewUrl.push({
+          url: formattedUrl,
+          visitedCount: 1
+        });
+      addUrlToSearchResults(addNewUrl);
+    }
+  }
 }
 
 export default AddressBar;
