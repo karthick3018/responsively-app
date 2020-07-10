@@ -42,9 +42,7 @@ import {
   getLastOpenedAddress,
   saveHomepage,
   saveLastOpenedAddress,
-  addUrlToExistingSearchResult
 } from '../utils/navigatorUtils';
-import {getExistingSearchResults,deleteSearchResults} from '../settings/urlSearchResultSettings';
 import console from 'electron-timber';
 import trimStart from 'lodash/trimStart';
 
@@ -133,7 +131,6 @@ export type BrowserStateType = {
   devToolsConfig: DevToolsConfigType,
   isInspecting: boolean,
   windowSize: WindowSizeType,
-  existingSearchResults: Array<String>
 };
 
 let _activeDevices = null;
@@ -262,16 +259,14 @@ export default function browser(
     },
     isInspecting: false,
     windowSize: getWindowSize(),
-    existingSearchResults: getExistingSearchResults()
   },
   action: Action
 ) {
   switch (action.type) {
     case NEW_ADDRESS:
       saveLastOpenedAddress(action.address);
-      let updatedSearchResults= addUrlToExistingSearchResult(state.existingSearchResults,action.address);
       _updateFileWatcher(action.address)
-      return {...state, address: action.address, existingSearchResults: updatedSearchResults, currentPageMeta: {}};
+      return {...state, address: action.address, currentPageMeta: {}};
     case NEW_PAGE_META_FIELD:
       return {
         ...state,

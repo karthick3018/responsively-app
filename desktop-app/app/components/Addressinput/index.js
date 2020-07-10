@@ -7,7 +7,7 @@ import DeleteStorageIcon from '../icons/DeleteStorage';
 import FavIconOff from '@material-ui/icons/StarBorder';
 import FavIconOn from '@material-ui/icons/Star';
 import {iconsColor, lightIconsColor} from '../../constants/colors';
-import {searchUrlUtils} from '../../utils/searchUrlUtils';
+import {getExistingSearchResults,updateExistingUrl,searchUrlUtils} from '../../services/searchUrlSuggestions';
 import UrlSearchResults from '../../components/UrlSearchResults';
 
 import commonStyles from '../common.styles.css';
@@ -34,7 +34,8 @@ class AddressBar extends React.Component<Props> {
     this.state = {
       userTypedAddress: props.address,
       previousAddress: props.address,
-      finalUrlResult:null,
+      finalUrlResult :null,
+      previousSearchResults: getExistingSearchResults()
     };
     this.inputRef = React.createRef();
     this._filterExistingUrl = debounce(this._filterExistingUrl, 300);
@@ -60,7 +61,7 @@ class AddressBar extends React.Component<Props> {
 
   render() {
     return (
-      <div className={styles.addressBarContainer}>
+      <div className={`${styles.addressBarContainer} ${this.state.finalUrlResult ? (this.state.finalUrlResult.length?styles.active:''):''}`}>
         <input
           ref={this.inputRef}
           type="text"
@@ -227,15 +228,17 @@ class AddressBar extends React.Component<Props> {
   _addUrlToExistingSearchResult = () => {
 
     this.props.onChange(this._normalize(this.state.userTypedAddress), true);
+    let updateUrlResult = updateExistingUrl(this.state.previousSearchResults,this._normalize(this.state.userTypedAddress));
 
     this.setState({
-      finalUrlResult:[]
+      finalUrlResult:[],
+      previousSearchResults: updateUrlResult
     })
   }
 
 
   _filterExistingUrl = () => {
-    let finalResult = searchUrlUtils(this.props.existingSearchResults,this.state.userTypedAddress)
+    let finalResult = searchUrlUtils(this.state.previousSearchResults,this.state.userTypedAddress)
     this.setState({finalUrlResult: finalResult});
   }
 
