@@ -9,7 +9,11 @@ import HomePlusIcon from '../icons/HomePlus';
 import DeleteCookieIcon from '../icons/DeleteCookie';
 import DeleteStorageIcon from '../icons/DeleteStorage';
 import {iconsColor, lightIconsColor} from '../../constants/colors';
-import { addUrlToSearchResults,getExistingSearchResults,deleteSearchResults } from '../../settings/searchResultSettings';
+import {
+  addUrlToSearchResults,
+  getExistingSearchResults,
+  deleteSearchResults,
+} from '../../settings/searchResultSettings';
 
 import commonStyles from '../common.styles.css';
 import styles from './style.css';
