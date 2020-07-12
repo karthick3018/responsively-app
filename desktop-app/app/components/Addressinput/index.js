@@ -1,6 +1,7 @@
 // @flow
 import React from 'react';
 import cx from 'classnames';
+import Downshift from "downshift";
 import HomePlusIcon from '../icons/HomePlus';
 import DeleteCookieIcon from '../icons/DeleteCookie';
 import DeleteStorageIcon from '../icons/DeleteStorage';
@@ -35,19 +36,12 @@ class AddressBar extends React.Component<Props> {
       userTypedAddress: props.address,
       previousAddress: props.address,
       finalUrlResult :null,
-      previousSearchResults: getExistingSearchResults()
+      previousSearchResults: getExistingSearchResults(),
+      menuIsOpen:false
     };
     this.inputRef = React.createRef();
     this._filterExistingUrl = debounce(this._filterExistingUrl, 300);
   }
-
-    componentDidMount() {
-      document.addEventListener('click', this._handleClickOutside);
-    }
-
-    componentWillUnmount() {
-        document.removeEventListener('click', this._handleClickOutside);
-    }
 
   static getDerivedStateFromProps(props, state) {
     if (props.address != state.previousAddress) {
@@ -59,20 +53,65 @@ class AddressBar extends React.Component<Props> {
     return null;
   }
 
+
   render() {
     return (
       <div className={`${styles.addressBarContainer} ${this.state.finalUrlResult ? (this.state.finalUrlResult.length?styles.active:''):''}`}>
-        <input
-          ref={this.inputRef}
-          type="text"
-          id="adress"
-          name="address"
-          className={styles.addressInput}
-          placeholder="https://your-website.com"
-          value={this.state.userTypedAddress}
-          onKeyDown={this._handleKeyDown}
-          onChange={ this._handleInputChange }
-        />
+         <Downshift
+          selectedItem={this.state.userTypedAddress}
+          isOpen={this.state.menuIsOpen}
+          onOuterClick={() => this.setState({menuIsOpen: false})}
+          onStateChange={this._handleUrlChange}>
+         {({
+            getInputProps,
+            getItemProps,
+            getMenuProps,
+            isOpen,
+            selectedItem,
+            highlightedIndex,
+          }) => (
+            <div>
+              <input
+                {...getInputProps({
+                  isOpen,
+                  placeholder: "https://your-website.com",
+                  value: this.state.userTypedAddress,
+                  className: styles.addressInput,
+                  ref: this.inputRef,
+                  type: "text",
+                  id: 'address',
+                  name: 'address',
+                  onChange: event => this._handleInputChange(event),
+                  onKeyDown: event => {
+                    if (event.key === "Enter" ) {
+                      // Prevent Downshift's default 'Enter' behavior.
+                      event.nativeEvent.preventDownshiftDefault = false;
+                      this._updateUrlToExistingSearchResult();
+                    }
+                    if(event.key === "ArrowDown"&&this.state.userTypedAddress){
+                      event.nativeEvent.preventDownshiftDefault = false;
+                      this._filterExistingUrl();
+                    }
+                  }
+                })}
+              />
+            <div >
+              {((!isOpen|| (this.state.finalUrlResult && !this.state.finalUrlResult.length)) ?  null : (
+                <UrlSearchResults
+                  divClassName={ cx(styles.searchBarSuggestionsContainer) }
+                  listItemUiClassName = { cx(styles.searchBarSuggestionsListUl) }
+                  listItemsClassName = { cx(styles.searchBarSuggestionsListItems) }
+                  existingSearchResults = { this.state.finalUrlResult }
+                  getItemProps = {getItemProps}
+                  highlightedIndex = {highlightedIndex}
+                  getMenuProps={getMenuProps}
+                 />
+              ))}
+            </div>
+          </div>
+        )}
+        </Downshift>
+
         <div className={cx(styles.floatingOptionsContainer)}>
           <div
             className={cx(commonStyles.icons, commonStyles.roundIcon, {
@@ -160,59 +199,35 @@ class AddressBar extends React.Component<Props> {
             </Tooltip>
           </div>
         </div>
-       {this.state.finalUrlResult?.length ?
-        <UrlSearchResults
-         divClassName={ cx(styles.searchBarSuggestionsContainer) }
-         listItemUiClassName = { cx(styles.searchBarSuggestionsListUl) }
-         listItemsClassName = { cx(styles.searchBarSuggestionsListItems) }
-         existingSearchResults = { this.state.finalUrlResult }
-         handleUrlChange = { this._onSearchedUrlClick }
-        />
-       :''}
       </div>
     );
   }
 
   _handleInputChange = (e) => {
-    this.setState({userTypedAddress: e.target.value},()=>{
-      this._filterExistingUrl();
-    });
-
+      this.setState({userTypedAddress: e.target.value},()=>{
+        this._filterExistingUrl();
+      });
   }
 
-  _handleKeyDown = e => {
-    if (e.key === 'Enter') {
-      this.inputRef.current.blur();
-      this._onChange(false);
-      this._addUrlToExistingSearchResult();
-    }
-  };
 
-  _onChange = (isNotFromEnter=true) => { //isNotFromEnter is used to hide the search result if the enter key is pressed!
+  _handleUrlChange = (changes) => {
+    let updatedAddress ;
+    if(changes?.selectedItem?.url){
+      this.setState({
+        userTypedAddress : changes.selectedItem.url
+      },()=>{
+        this._updateUrlToExistingSearchResult();
+      })
+    }
+  }
+
+  _onChange = () => {
     if (!this.state.userTypedAddress) {
       return;
     }
-    isNotFromEnter && this._filterExistingUrl();
     this.props.onChange &&
       this.props.onChange(this._normalize(this.state.userTypedAddress), true);
   };
-
-  _onSearchedUrlClick = (url,index) => {
-      if(url !== this.state.previousAddress){
-        this.props.onChange(this._normalize(url), true);
-      }
-
-      this.setState({
-        userTypedAddress: url,
-        finalUrlResult:[]
-      },()=>{
-        //for increasing the visited count
-        this._addUrlToExistingSearchResult();
-      });
-
-  }
-
-
 
   _normalize = address => {
     if (address.indexOf('://') === -1) {
@@ -225,27 +240,20 @@ class AddressBar extends React.Component<Props> {
     return address;
   };
 
-  _addUrlToExistingSearchResult = () => {
-
+  _updateUrlToExistingSearchResult = (value) => {
     this.props.onChange(this._normalize(this.state.userTypedAddress), true);
     let updateUrlResult = updateExistingUrl(this.state.previousSearchResults,this._normalize(this.state.userTypedAddress));
 
     this.setState({
       finalUrlResult:[],
-      previousSearchResults: updateUrlResult
+      previousSearchResults: updateUrlResult,
     })
   }
 
 
   _filterExistingUrl = () => {
     let finalResult = searchUrlUtils(this.state.previousSearchResults,this.state.userTypedAddress)
-    this.setState({finalUrlResult: finalResult});
-  }
-
-  _handleClickOutside = () => {
-    this.setState({
-      finalUrlResult:[]
-    })
+    this.setState({finalUrlResult: finalResult,menuIsOpen:true});
   }
 
 }

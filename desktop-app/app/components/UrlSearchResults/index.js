@@ -4,18 +4,36 @@ const UrlSearchResults = ({
   divClassName,
   listItemsClassName,
   existingSearchResults,
-  handleUrlChange,
   activeClass,
-  listItemUiClassName
+  listItemUiClassName,
+  getItemProps,
+  highlightedIndex,
+  getMenuProps
 }) => {
+
+  const itemToString=(item)=> {
+    return item ? item.url : "";
+  }
+
   return(
      <div className = { divClassName }>
-       <ul className={ listItemUiClassName }>
-      {existingSearchResults?.map((eachResult,index)=>{
-        return(
-         <li onKeyDown={(e)=>handleOnKeyDown(e,eachResult.url)} key={ index } onClick={ ()=>handleUrlChange(eachResult.url,index) } className={ `${listItemsClassName}` }> { eachResult.url }</li>
-        )
-      })}
+       <ul {...getMenuProps({className: listItemUiClassName})} >
+        {existingSearchResults?.map((eachResult,index)=>{
+          return(
+            <li
+             {...getItemProps({
+               key: eachResult.url,
+               index,
+               item: eachResult,
+               style: {
+                 backgroundColor:
+                   highlightedIndex === index && 'lightgray',
+               }
+             })}>
+            {itemToString(eachResult)}
+            </li>
+          )
+        })}
       </ul>
      </div>
   )
