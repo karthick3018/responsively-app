@@ -16,6 +16,7 @@ import styles from './style.css';
 import {Tooltip} from '@material-ui/core';
 import {Icon} from 'flwww';
 import debounce from 'lodash/debounce';
+import filter from 'lodash/filter';
 
 type Props = {
   address: string,
@@ -53,15 +54,32 @@ class AddressBar extends React.Component<Props> {
     return null;
   }
 
+  onSelectItem = (value) => {
+   if(value?.url){
+    this.setState({
+      userTypedAddress:value.url
+    },()=>{
+     this._updateUrlToExistingSearchResult()
+    })
+   }
+   else{
+     this.setState({
+      menuIsOpen:false
+     })
+   }
+  }
+
 
   render() {
     return (
       <div className={`${styles.addressBarContainer} ${this.state.finalUrlResult ? (this.state.finalUrlResult.length?styles.active:''):''}`}>
          <Downshift
           selectedItem={this.state.userTypedAddress}
+          onChange={selection => this.onSelectItem(selection)}
           isOpen={this.state.menuIsOpen}
           onOuterClick={() => this.setState({menuIsOpen: false})}
-          onStateChange={this._handleUrlChange}>
+          onStateChange={this._handleUrlChange}
+          >
          {({
             getInputProps,
             getItemProps,
@@ -87,10 +105,6 @@ class AddressBar extends React.Component<Props> {
                       // Prevent Downshift's default 'Enter' behavior.
                       event.nativeEvent.preventDownshiftDefault = false;
                       this._updateUrlToExistingSearchResult();
-                    }
-                    if(event.key === "ArrowDown"&&this.state.userTypedAddress){
-                      event.nativeEvent.preventDownshiftDefault = false;
-                      this._filterExistingUrl();
                     }
                   }
                 })}
@@ -210,14 +224,12 @@ class AddressBar extends React.Component<Props> {
   }
 
 
-  _handleUrlChange = (changes) => {
-    let updatedAddress ;
-    if(changes?.selectedItem?.url){
-      this.setState({
-        userTypedAddress : changes.selectedItem.url
-      },()=>{
-        this._updateUrlToExistingSearchResult();
-      })
+  _handleUrlChange = async(changes) => {
+    if((changes?.type==="__autocomplete_keydown_arrow_down__"||changes?.type==="__autocomplete_keydown_arrow_up__")){
+      const filteredData = await filter(this.state.finalUrlResult, (eachResult,index) => index===changes?.highlightedIndex);
+       this.setState({
+        userTypedAddress: filteredData[0]?.url
+       })
     }
   }
 
@@ -240,7 +252,8 @@ class AddressBar extends React.Component<Props> {
     return address;
   };
 
-  _updateUrlToExistingSearchResult = (value) => {
+  _updateUrlToExistingSearchResult = () => {
+
     this.props.onChange(this._normalize(this.state.userTypedAddress), true);
     let updateUrlResult = updateExistingUrl(this.state.previousSearchResults,this._normalize(this.state.userTypedAddress));
 

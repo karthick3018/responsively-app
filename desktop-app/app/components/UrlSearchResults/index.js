@@ -20,7 +20,7 @@ const UrlSearchResults = ({
        <ul {...getMenuProps({className: listItemUiClassName})} >
         {existingSearchResults?.map((eachResult,index)=>{
           return(
-            <li
+            index<8 && <li
              {...getItemProps({
                key: eachResult.url,
                index,
