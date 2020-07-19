@@ -31,11 +31,6 @@ const _sortedExistingUrlSearchResult = (filteredData) => { //Most visited site s
 
 }
 
-/* **
-@params existingUrl,existingSearchResults is received from the function call
- */
-
-
 export const searchUrlUtils = (existingUrl,url) => {
   const filteredData = filter(existingUrl, (eachResult) => eachResult.url.toLowerCase().includes(url));
   let finalResult = _sortedExistingUrlSearchResult(filteredData);
